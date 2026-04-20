@@ -15,6 +15,7 @@ ExportedObj/
 *.unityproj
 *.sln
 *.slnx
+.DS_Store
 *.suo
 *.tmp
 *.user
