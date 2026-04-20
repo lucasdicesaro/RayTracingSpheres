@@ -53,6 +53,8 @@ Shader "Custom/RayTracingFirstHit"
                 RayTracingMaterial material;
             };
 
+            // Note: to use this shader, the ComputeBuffer must use a stride matching this Sphere struct
+            // (position + radius + color only), not the full layout used by RayTracingDiffuse.
             StructuredBuffer<Sphere> Spheres;
             int NumSpheres;
 

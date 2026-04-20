@@ -198,6 +198,8 @@ Shader "Custom/RayTracingDiffuse"
                         float lightStrength = dot(hitInfo.normal, ray.dir);
                         incomingLight += emittedLight * rayColor;
                         rayColor *= material.color.rgb * lightStrength * 2;
+                        if (max(rayColor.r, max(rayColor.g, rayColor.b)) < 0.001)
+                            break;
                     }
                     else {
                         incomingLight += GetEnvironmentLight(ray) * rayColor;

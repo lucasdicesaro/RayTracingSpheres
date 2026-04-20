@@ -20,6 +20,7 @@ public class RayTracingManager : MonoBehaviour
     Material rayTracingMaterial;
     Material comparisonMaterial;
     ComputeBuffer sphereBuffer;
+    Sphere[] sphereData;
 
     // Accumulation ping-pong
     RenderTexture accumA; // write target
@@ -30,7 +31,7 @@ public class RayTracingManager : MonoBehaviour
     {
         public Vector4 color;           // RGBA
         public Vector3 emissionColor;   // RGB
-        public float emissionStrenght;  // scalar
+        public float emissionStrength;  // scalar
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -100,8 +101,8 @@ public class RayTracingManager : MonoBehaviour
             {
                 if (accumA) { accumA.Release(); accumA = null; }
                 if (accumB) { accumB.Release(); accumB = null; }
-                accumA = new RenderTexture(desc) { filterMode = FilterMode.Bilinear }; accumA.Create();
-                accumB = new RenderTexture(desc) { filterMode = FilterMode.Bilinear }; accumB.Create();
+                accumA = new RenderTexture(desc) { filterMode = FilterMode.Point }; accumA.Create();
+                accumB = new RenderTexture(desc) { filterMode = FilterMode.Point }; accumB.Create();
                 frameIndex = 0;
             }
 
@@ -140,22 +141,23 @@ public class RayTracingManager : MonoBehaviour
 
     void SendSphereParams()
     {
-        var sphereObjects = Object.FindObjectsByType<SphereObject>(FindObjectsSortMode.None);
-        int count = sphereObjects.Length;
+        var sphereObjects = SphereObject.All;
+        int count = sphereObjects.Count;
 
         // Prepare data
-        var data = new Sphere[count];
+        if (sphereData == null || sphereData.Length != count)
+            sphereData = new Sphere[count];
         for (int i = 0; i < count; i++)
         {
             var s = sphereObjects[i];
-            data[i].position = s.transform.position;
+            sphereData[i].position = s.transform.position;
             // Derive radius from scale (user edits scale in Scene view)
-            data[i].radius = 0.5f * Mathf.Max(s.transform.lossyScale.x, s.transform.lossyScale.y, s.transform.lossyScale.z);
+            sphereData[i].radius = 0.5f * Mathf.Max(s.transform.lossyScale.x, s.transform.lossyScale.y, s.transform.lossyScale.z);
             var baseCol = s.Color;
             var emitCol = s.EmissionColor;
-            data[i].material.color = new Vector4(baseCol.r, baseCol.g, baseCol.b, baseCol.a);
-            data[i].material.emissionColor = new Vector3(emitCol.r, emitCol.g, emitCol.b);
-            data[i].material.emissionStrenght = s.EmissionStrength;
+            sphereData[i].material.color = new Vector4(baseCol.r, baseCol.g, baseCol.b, baseCol.a);
+            sphereData[i].material.emissionColor = new Vector3(emitCol.r, emitCol.g, emitCol.b);
+            sphereData[i].material.emissionStrength = s.EmissionStrength;
         }
 
         // Create or resize buffer
@@ -167,7 +169,7 @@ public class RayTracingManager : MonoBehaviour
         }
         if (count > 0)
         {
-            sphereBuffer.SetData(data);
+            sphereBuffer.SetData(sphereData);
         }
 
         // Bind to material
@@ -187,8 +189,8 @@ public class RayTracingManager : MonoBehaviour
 
         // Sun direction and intensity
         Light dirLight = RenderSettings.sun;
-        Vector3 sunDir = dirLight.transform.forward;
-        float sunIntensity = dirLight.intensity;
+        Vector3 sunDir = dirLight != null ? dirLight.transform.forward : Vector3.down;
+        float sunIntensity = dirLight != null ? dirLight.intensity : 0f;
         float sunFocus = 64f;
         rayTracingMaterial.SetVector("SunLightDirection", new Vector4(sunDir.x, sunDir.y, sunDir.z, 0f));
         rayTracingMaterial.SetFloat("SunIntensity", sunIntensity);

@@ -1,8 +1,11 @@
 using UnityEngine;
+using System.Collections.Generic;
 
-[DisallowMultipleComponent]
+[ExecuteAlways, DisallowMultipleComponent]
 public class SphereObject : MonoBehaviour
 {
+    public static readonly List<SphereObject> All = new();
+
     [SerializeField]
     private Color color = Color.white;
 
@@ -16,4 +19,7 @@ public class SphereObject : MonoBehaviour
     public Color Color => color;
     public Color EmissionColor => emissionColor;
     public float EmissionStrength => emissionStrength;
+
+    void OnEnable()  => All.Add(this);
+    void OnDisable() => All.Remove(this);
 }
