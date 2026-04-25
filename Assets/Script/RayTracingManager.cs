@@ -92,11 +92,12 @@ public class RayTracingManager : MonoBehaviour
                 return;
             }
 
-            // Ensure accumulation buffers
+            // Ensure accumulation buffers (float to avoid clamping HDR values)
             var desc = src.descriptor;
             desc.depthBufferBits = 0;
             desc.msaaSamples = 1;
-            desc.sRGB = false; // accumulate in linear space
+            desc.colorFormat = RenderTextureFormat.ARGBFloat;
+            desc.sRGB = false;
             if (accumA == null || accumA.width != src.width || accumA.height != src.height)
             {
                 if (accumA) { accumA.Release(); accumA = null; }
@@ -106,8 +107,11 @@ public class RayTracingManager : MonoBehaviour
                 frameIndex = 0;
             }
 
-            // Render current frame
-            var currentRT = RenderTexture.GetTemporary(src.descriptor);
+            // Render current frame into a float RT to avoid clamping HDR values
+            var rtDesc = src.descriptor;
+            rtDesc.colorFormat = RenderTextureFormat.ARGBFloat;
+            rtDesc.sRGB = false;
+            var currentRT = RenderTexture.GetTemporary(rtDesc);
             Graphics.Blit(null, currentRT, rayTracingMaterial);
 
             // Set frame count and explicitly bind Comparison shader inputs
