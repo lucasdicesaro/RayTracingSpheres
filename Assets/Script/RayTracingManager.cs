@@ -4,14 +4,14 @@ using System.Runtime.InteropServices;
 public class RayTracingManager : MonoBehaviour
 {
     [Header("Ray Tracing Settings")]
-    [SerializeField, Min(0)] int MaxBounceCount = 1;
-    [SerializeField, Min(1)] int NumRaysPerPixel = 1;
+    [SerializeField, Min(0)] int MaxBounceCount = 30;
+    [SerializeField, Min(1)] int NumRaysPerPixel = 10;
     [SerializeField] bool Accumulate = true;
     [SerializeField, InspectorName("Update In Edit Mode")] bool updateInEditMode = false;
     [SerializeField, Min(0), InspectorName("Num Rendered Frames")] int frameIndex;
 
     [Header("View Settings")]
-    [SerializeField, InspectorName("Use Shader in Scene View")] bool useShaderInSceneView;
+    [SerializeField, InspectorName("Use Shader in Scene View")] bool useShaderInSceneView = true;
 
     [Header("References")]
     [SerializeField] Shader rayTracingShader;

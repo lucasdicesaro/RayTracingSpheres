@@ -3,10 +3,10 @@ using UnityEngine;
 public class CameraTest : MonoBehaviour
 {
     [SerializeField]
-    private Vector2Int debugPointCount = new Vector2Int(10, 10);
+    private Vector2Int debugPointCount = new Vector2Int(16, 9);
 
     [SerializeField]
-    private float debugPointRadius = 0.02f;
+    private float debugPointRadius = 0.025f;
 
     [SerializeField]
     private Color pointCol = Color.white;
@@ -14,7 +14,7 @@ public class CameraTest : MonoBehaviour
     private const float ArrowHeadSize = 0.04f;
 
     [SerializeField]
-    private float arrowLength = 1f;
+    private float arrowLength = 0.97f;
 
     // Thickness not interactive; revert to single-line arrows
 
