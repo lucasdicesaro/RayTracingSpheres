@@ -190,7 +190,8 @@ Shader "Custom/RayTracingDiffuse"
                 for (int i = 0; i <= MaxBounceCount; i++){
                     HitInfo hitInfo = CalculateRayCollision(ray);
                     if (hitInfo.didHit) {
-                        ray.origin = hitInfo.hitPoint;
+                        // Offset along the normal so the next ray doesn't re-hit the same surface
+                        ray.origin = hitInfo.hitPoint + hitInfo.normal * 1e-4;
                         ray.dir = RandomHemisphereDirection(hitInfo.normal, rngState);
                         
                         RayTracingMaterial material = hitInfo.material;
@@ -211,7 +212,7 @@ Shader "Custom/RayTracingDiffuse"
             }
 
             // Run for every pixel in the display
-            fixed4 frag(v2f i) : SV_Target
+            float4 frag(v2f i) : SV_Target
             {
                 // Create a seed for random number generator
                 uint2 numPixels = _ScreenParams.xy;
@@ -219,17 +220,18 @@ Shader "Custom/RayTracingDiffuse"
                 uint pixelIndex = pixelCoord.y * numPixels.x + pixelCoord.x;
                 uint rngState = pixelIndex + Frame * 719393u;
 
-                // Create ray
-                float3 viewPointLocal = float3(i.uv - 0.5, 1) * ViewParams;
-                float3 viewPoint = mul(CamLocalToWorldMatrix, float4(viewPointLocal, 1));
-
-                Ray ray;
-                ray.origin = _WorldSpaceCameraPos;
-                ray.dir = normalize(viewPoint - ray.origin);
-
                 // Calculate pixel color
                 float3 totalIncomingLight = 0;
                 for (int rayIndex = 0; rayIndex < NumRaysPerPixel; rayIndex++) {
+                    // Jitter the ray within the pixel footprint so accumulation anti-aliases
+                    float2 jitter = (float2(RandomValue(rngState), RandomValue(rngState)) - 0.5) / numPixels;
+                    float3 viewPointLocal = float3(i.uv + jitter - 0.5, 1) * ViewParams;
+                    float3 viewPoint = mul(CamLocalToWorldMatrix, float4(viewPointLocal, 1));
+
+                    Ray ray;
+                    ray.origin = _WorldSpaceCameraPos;
+                    ray.dir = normalize(viewPoint - ray.origin);
+
                     totalIncomingLight += Trace(ray, rngState);
                 }
                 float3 pixelCol = totalIncomingLight / NumRaysPerPixel;

@@ -25,6 +25,8 @@ public class RayTracingManager : MonoBehaviour
     // Accumulation ping-pong
     RenderTexture accumA; // write target
     RenderTexture accumB; // read source
+    int lastSceneHash;    // camera + spheres + settings; accumulation resets when it changes
+    Light sunLight;       // RenderSettings.sun, or any directional light as fallback
 
     [StructLayout(LayoutKind.Sequential)]
     struct RayTracingMaterial
@@ -72,21 +74,27 @@ public class RayTracingManager : MonoBehaviour
                 return;
             }
 
-            // Only create/use comparison material when accumulating
-            if (Accumulate && comparisonMaterial == null && comparisonShader != null)
+            // Accumulate only if the comparison shader is available; otherwise fall back to a plain render
+            bool accumulate = Accumulate;
+            if (accumulate)
             {
                 ShaderHelper.InitMaterial(comparisonShader, ref comparisonMaterial);
+                accumulate = comparisonMaterial != null;
             }
 
             UpdateCameraParams(Camera.current);
-            SendSphereParams();
+            int sceneHash = SendSphereParams();
             SendEnvironmentParams();
+
+            // Restart accumulation when anything that affects the image changes
+            sceneHash = System.HashCode.Combine(sceneHash, Camera.current.transform.localToWorldMatrix, MaxBounceCount, NumRaysPerPixel);
+            if (sceneHash != lastSceneHash) { lastSceneHash = sceneHash; frameIndex = 0; }
 
             rayTracingMaterial.SetInt("MaxBounceCount", MaxBounceCount);
             rayTracingMaterial.SetInt("NumRaysPerPixel", NumRaysPerPixel);
             rayTracingMaterial.SetInt("Frame", frameIndex);
 
-            if (!Accumulate)
+            if (!accumulate)
             {
                 Graphics.Blit(null, target, rayTracingMaterial);
                 return;
@@ -143,10 +151,12 @@ public class RayTracingManager : MonoBehaviour
         rayTracingMaterial.SetMatrix("CamLocalToWorldMatrix", cam.transform.localToWorldMatrix);
     }
 
-    void SendSphereParams()
+    // Returns a hash of the sphere data so callers can detect scene changes
+    int SendSphereParams()
     {
         var sphereObjects = SphereObject.All;
         int count = sphereObjects.Count;
+        int hash = count;
 
         // Prepare data
         if (sphereData == null || sphereData.Length != count)
@@ -162,6 +172,7 @@ public class RayTracingManager : MonoBehaviour
             sphereData[i].material.color = new Vector4(baseCol.r, baseCol.g, baseCol.b, baseCol.a);
             sphereData[i].material.emissionColor = new Vector3(emitCol.r, emitCol.g, emitCol.b);
             sphereData[i].material.emissionStrength = s.EmissionStrength;
+            hash = System.HashCode.Combine(hash, sphereData[i].position, sphereData[i].radius, baseCol, emitCol, s.EmissionStrength);
         }
 
         // Create or resize buffer
@@ -179,6 +190,7 @@ public class RayTracingManager : MonoBehaviour
         // Bind to material
         rayTracingMaterial.SetInt("NumSpheres", count);
         rayTracingMaterial.SetBuffer("Spheres", sphereBuffer);
+        return hash;
     }
 
     void SendEnvironmentParams()
@@ -191,8 +203,15 @@ public class RayTracingManager : MonoBehaviour
         rayTracingMaterial.SetVector("SkyColorHorizon", new Vector4(horizon.r, horizon.g, horizon.b, 0f));
         rayTracingMaterial.SetVector("GroundColor", new Vector4(ground.r, ground.g, ground.b, 0f));
 
-        // Sun direction and intensity
-        Light dirLight = RenderSettings.sun;
+        // Sun direction and intensity: use the Lighting window's Sun Source, else any directional light
+        if (sunLight == null)
+        {
+            sunLight = RenderSettings.sun;
+            if (sunLight == null)
+                foreach (var l in FindObjectsByType<Light>(FindObjectsSortMode.None))
+                    if (l.type == LightType.Directional) { sunLight = l; break; }
+        }
+        Light dirLight = sunLight;
         Vector3 sunDir = dirLight != null ? dirLight.transform.forward : Vector3.down;
         float sunIntensity = dirLight != null ? dirLight.intensity : 0f;
         float sunFocus = 64f;
