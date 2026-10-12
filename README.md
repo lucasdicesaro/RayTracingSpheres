@@ -1,10 +1,10 @@
 # Ray Tracing Spheres
 
-A ray tracing renderer built in Unity using compute shaders, based on Sebastian Lague's ray tracing video tutorials. Renders spheres with diffuse shading and multiple bounce lighting.
+A ray tracing renderer built in Unity as a full-screen fragment shader, based on Sebastian Lague's ray tracing video tutorials. Renders spheres with diffuse shading and multiple bounce lighting.
 
 ## What it does
 
-- Real-time ray tracing via a compute shader running on the GPU
+- Real-time ray tracing in a fragment shader, applied as a camera image effect (`OnRenderImage` + `Graphics.Blit`)
 - Supports multiple spheres with configurable material properties
 - Progressive rendering — accumulates samples over frames for anti-aliasing
 - Multiple shader variants: first hit, diffuse, and sphere-specific passes
@@ -12,11 +12,11 @@ A ray tracing renderer built in Unity using compute shaders, based on Sebastian 
 ## Requirements
 
 - Unity 2022.3 or later
-- GPU with compute shader support (DirectX 11 / Metal)
+- GPU with Shader Model 5 support (DirectX 11 / Metal)
 
 ## Rendering pipeline note
 
-This project uses Unity's **Built-in renderer** — URP is intentionally disabled in `Project Settings → Graphics`. Compute shader ray tracing requires the camera image effect pipeline, which doesn't work with URP active. This is already committed in `ProjectSettings/`, so no manual change is needed after cloning.
+This project uses Unity's **Built-in renderer** — URP is intentionally disabled in `Project Settings → Graphics`. The renderer runs in `OnRenderImage`, the camera image-effect hook, which URP never calls. This is already committed in `ProjectSettings/`, so no manual change is needed after cloning.
 
 ## How to open
 
