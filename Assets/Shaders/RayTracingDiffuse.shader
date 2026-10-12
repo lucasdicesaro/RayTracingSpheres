@@ -147,7 +147,8 @@ Shader "Custom/RayTracingDiffuse"
             {
                 // Thanks to https://stackoverflow.com/a/6178290
                 float theta = 2 * 3.14159265 * RandomValue(state);
-                float rho = sqrt(-2.0 * log(RandomValue(state)));
+                // RandomValue can return exactly 0 (one state per 2^32); log(0) = -inf would NaN the ray and permanently blacken the accumulated pixel
+                float rho = sqrt(-2.0 * log(max(RandomValue(state), 1e-10)));
                 return rho * cos(theta);
             }
 
