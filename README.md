@@ -18,6 +18,12 @@ A ray tracing renderer built in Unity as a full-screen fragment shader, based on
 
 This project uses Unity's **Built-in renderer** — URP is intentionally disabled in `Project Settings → Graphics`. The renderer runs in `OnRenderImage`, the camera image-effect hook, which URP never calls. This is already committed in `ProjectSettings/`, so no manual change is needed after cloning.
 
+To disable URP by hand (for example if it gets re-enabled):
+
+1. **Edit → Project Settings → Graphics** → set **Default Render Pipeline** to **None**
+2. **Edit → Project Settings → Quality** → for each quality level, set **Render Pipeline Asset** to **None**
+3. Press Play; the Game view should show the ray traced image instead of the plain scene
+
 ## How to open
 
 1. Clone the repo
